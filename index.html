@@ -300,6 +300,15 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* FIX: Smooth transitions for cart updates */
+        .cart-count {
+            transition: all 0.3s ease;
+        }
+        
+        .menu-item-card {
+            transition: all 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -395,7 +404,7 @@
                             <button onclick="${onCartClick}" class="relative p-2 hover:bg-[#5D4037] rounded-full transition-colors">
                                 <span class="text-2xl ${cartAnimation ? 'animate-cart-bounce' : ''}">🛒</span>
                                 ${cartCount > 0 ? `
-                                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full animate-bounce">
+                                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full cart-count">
                                         ${cartCount}
                                     </span>
                                 ` : ''}
@@ -664,7 +673,7 @@
                             <div class="text-center">
                                 <h4 class="font-bold mb-3">Contact Info</h4>
                                 <p class="text-sm mb-1">${restaurantPhone}</p>
-                                <p class="text-xs opacity-50">Open Daily: 02:00 PM - 02:00 AM</p>
+                                <p class="text-xs opacity-50">Open Daily: 7:00 AM - 11:00 PM</p>
                             </div>
                             <div class="text-center md:text-right">
                                 <h4 class="font-bold mb-3">Created By</h4>
@@ -724,21 +733,51 @@
             }
 
             setState(newState) {
-                const newCartCount = this.getCartCount();
+                // Only update specific parts instead of full re-render
+                const shouldFullRender = newState.isLoading !== undefined || 
+                                       newState.isCartOpen !== undefined ||
+                                       newState.isOrderModalOpen !== undefined ||
+                                       newState.showOrderConfirmed !== undefined;
                 
-                // Check if cart count increased
-                if (newCartCount > this.prevCartCount) {
+                this.state = { ...this.state, ...newState };
+                this.saveCartToStorage();
+
+                if (shouldFullRender) {
+                    this.render();
+                } else {
+                    // Only update cart count and animations
+                    this.updateCartUI();
+                }
+            }
+
+            updateCartUI() {
+                const cartCount = this.getCartCount();
+                
+                // Update cart count in header
+                const cartCountElement = document.querySelector('.cart-count');
+                const cartIcon = document.querySelector('.fa-shopping-cart, [class*="cart"]');
+                
+                if (cartCountElement) {
+                    if (cartCount > 0) {
+                        cartCountElement.textContent = cartCount;
+                        cartCountElement.classList.add('animate-bounce');
+                        setTimeout(() => {
+                            cartCountElement.classList.remove('animate-bounce');
+                        }, 1000);
+                    } else {
+                        cartCountElement.remove();
+                    }
+                }
+
+                // Update cart animation
+                if (cartCount > this.prevCartCount) {
                     this.state.cartAnimation = true;
                     setTimeout(() => {
                         this.state.cartAnimation = false;
-                        this.render();
                     }, 500);
                 }
                 
-                this.prevCartCount = newCartCount;
-                this.state = { ...this.state, ...newState };
-                this.saveCartToStorage();
-                this.render();
+                this.prevCartCount = cartCount;
             }
 
             saveCartToStorage() {
