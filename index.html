@@ -108,6 +108,28 @@
             animation: item-added 0.6s ease-out;
         }
 
+        /* NEW: Item Name Jump Animation */
+        @keyframes item-name-jump {
+            0% { transform: translateY(0) scale(1); color: #1F2937; }
+            25% { transform: translateY(-8px) scale(1.1); color: #10B981; }
+            50% { transform: translateY(-12px) scale(1.15); color: #059669; }
+            75% { transform: translateY(-8px) scale(1.1); color: #10B981; }
+            100% { transform: translateY(0) scale(1); color: #1F2937; }
+        }
+        .animate-item-name-jump {
+            animation: item-name-jump 0.8s ease-out;
+        }
+
+        /* NEW: Button Success Animation */
+        @keyframes button-success {
+            0% { background-color: #fed7aa; transform: scale(1); }
+            50% { background-color: #10B981; transform: scale(1.2); color: white; }
+            100% { background-color: #fed7aa; transform: scale(1); color: #6D4C41; }
+        }
+        .animate-button-success {
+            animation: button-success 0.6s ease-out;
+        }
+
         /* Form Field Animations */
         @keyframes field-focus {
             0% { transform: scale(1); box-shadow: 0 0 0 rgba(109, 76, 65, 0); }
@@ -309,6 +331,30 @@
         .menu-item-card {
             transition: all 0.3s ease;
         }
+
+        /* NEW: Success Message Styles */
+        .success-message {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+        }
+
+        /* NEW: Menu Only Page Styles */
+        .menu-only-page {
+            background: #FFF8E1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .back-to-home {
+            transition: all 0.3s ease;
+        }
+        
+        .back-to-home:hover {
+            transform: translateX(-5px);
+        }
     </style>
 </head>
 <body>
@@ -389,18 +435,25 @@
             `;
         };
 
-        const Header = (cartCount, onCartClick, cartAnimation) => {
+        const Header = (cartCount, onCartClick, cartAnimation, showBackButton = false, onBackClick = '') => {
             return `
                 <header class="sticky top-0 z-40 bg-[#6D4C41] text-[#FFF8E1] shadow-md">
                     <div class="container mx-auto px-4 py-3 flex justify-between items-center">
                         <div class="flex items-center gap-2">
+                            ${showBackButton ? `
+                                <button onclick="${onBackClick}" class="back-to-home mr-2 p-1 hover:bg-[#5D4037] rounded-full transition-colors">
+                                    <span class="text-xl">←</span>
+                                </button>
+                            ` : ''}
                             <span class="text-2xl">☕</span>
                             <h1 class="text-xl font-bold font-script tracking-wide">Chaaye Junction</h1>
                         </div>
                         <div class="flex items-center gap-4">
-                            <a href="tel:${restaurantPhone.replace(/\s+/g, '')}" class="hidden md:flex items-center gap-1 bg-[#5D4037] px-3 py-1 rounded-full text-sm hover:bg-[#4E342E] transition-colors">
-                                <span>📞</span> ${restaurantPhone}
-                            </a>
+                            ${!showBackButton ? `
+                                <a href="tel:${restaurantPhone.replace(/\s+/g, '')}" class="hidden md:flex items-center gap-1 bg-[#5D4037] px-3 py-1 rounded-full text-sm hover:bg-[#4E342E] transition-colors">
+                                    <span>📞</span> ${restaurantPhone}
+                                </a>
+                            ` : ''}
                             <button onclick="${onCartClick}" class="relative p-2 hover:bg-[#5D4037] rounded-full transition-colors">
                                 <span class="text-2xl ${cartAnimation ? 'animate-cart-bounce' : ''}">🛒</span>
                                 ${cartCount > 0 ? `
@@ -422,7 +475,7 @@
                         <h1 class="text-4xl md:text-6xl font-bold mb-4 font-script animate-fade-in-up">Chaaye Junction</h1>
                         <p class="text-xl md:text-2xl mb-6 animate-fade-in-up" style="animation-delay: 0.2s">Freshness in Every Sip</p>
                         <p class="text-lg mb-8 animate-fade-in-up" style="animation-delay: 0.4s">${restaurantPhone}</p>
-                        <button onclick="app.scrollToMenu()" class="floating-btn bg-[#FFA726] text-[#6D4C41] px-8 py-3 rounded-full font-bold hover:bg-[#FF9800] transition-all animate-fade-in-up" style="animation-delay: 0.6s">
+                        <button onclick="app.showMenuOnly()" class="floating-btn bg-[#FFA726] text-[#6D4C41] px-8 py-3 rounded-full font-bold hover:bg-[#FF9800] transition-all animate-fade-in-up" style="animation-delay: 0.6s">
                             View Our Menu
                         </button>
                     </div>
@@ -461,12 +514,13 @@
                             ${getIcon(item.icon)}
                         </div>
                         <div>
-                            <h3 class="font-bold text-gray-800">${item.name}</h3>
+                            <h3 id="item-name-${item.name.replace(/\s+/g, '-')}" class="font-bold text-gray-800 item-name">${item.name}</h3>
                             <p class="text-xs text-gray-500">${item.desc}</p>
                             <p class="price-tag text-orange-600 font-semibold mt-1 transition-all duration-300">Rs. ${item.price}</p>
                         </div>
                     </div>
-                    <button onclick="${onAddToCart}({name: '${item.name}', price: ${item.price}})" 
+                    <button id="add-btn-${item.name.replace(/\s+/g, '-')}" 
+                            onclick="${onAddToCart}({name: '${item.name}', price: ${item.price}})" 
                             class="ripple-effect bg-orange-100 hover:bg-orange-200 text-[#6D4C41] p-2 rounded-lg transition-all active:scale-95 add-to-cart-btn">
                         +
                     </button>
@@ -482,22 +536,6 @@
                         ${itemsHtml}
                     </div>
                 </div>
-            `;
-        };
-
-        const Menu = (menuData, onAddToCart) => {
-            return `
-                <section id="menu-section" class="py-12 bg-orange-50 smooth-scroll-target">
-                    <div class="container mx-auto px-4">
-                        <div class="text-center mb-12">
-                            <h2 class="text-3xl md:text-4xl font-bold text-[#6D4C41] mb-3 font-script">Our Menu</h2>
-                            <p class="text-gray-500">Handcrafted with love and tradition</p>
-                        </div>
-                        ${CategorySection("☕ CHAAYE VARIANTS", menuData.chaaye, onAddToCart)}
-                        ${CategorySection("☕ COFFEE", menuData.coffee, onAddToCart)}
-                        ${CategorySection("🍮 DESSERTS & SNACKS", menuData.desserts, onAddToCart)}
-                    </div>
-                </section>
             `;
         };
 
@@ -654,8 +692,11 @@
         const MessageBox = (message, isError) => {
             if (!message) return '';
             return `
-                <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg z-50 text-white font-medium text-sm animate-fade-in-up ${isError ? 'bg-red-500' : 'bg-[#6D4C41]'}">
-                    ${message}
+                <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg z-50 text-white font-medium text-sm animate-fade-in-up ${isError ? 'bg-red-500' : 'success-message'}">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">✅</span>
+                        <span>${message}</span>
+                    </div>
                 </div>
             `;
         };
@@ -701,7 +742,8 @@
                     isOrderModalOpen: false,
                     showOrderConfirmed: false,
                     message: null,
-                    cartAnimation: false
+                    cartAnimation: false,
+                    currentPage: 'home' // 'home' or 'menu-only'
                 };
 
                 this.prevCartCount = 0;
@@ -733,11 +775,12 @@
             }
 
             setState(newState) {
-                // Only update specific parts instead of full re-render
+                // Check if a full re-render is needed
                 const shouldFullRender = newState.isLoading !== undefined || 
                                        newState.isCartOpen !== undefined ||
                                        newState.isOrderModalOpen !== undefined ||
-                                       newState.showOrderConfirmed !== undefined;
+                                       newState.showOrderConfirmed !== undefined ||
+                                       newState.currentPage !== undefined;
                 
                 this.state = { ...this.state, ...newState };
                 this.saveCartToStorage();
@@ -745,7 +788,7 @@
                 if (shouldFullRender) {
                     this.render();
                 } else {
-                    // Only update cart count and animations
+                    // Only update cart count and animations if no full re-render
                     this.updateCartUI();
                 }
             }
@@ -755,7 +798,6 @@
                 
                 // Update cart count in header
                 const cartCountElement = document.querySelector('.cart-count');
-                const cartIcon = document.querySelector('.fa-shopping-cart, [class*="cart"]');
                 
                 if (cartCountElement) {
                     if (cartCount > 0) {
@@ -765,15 +807,30 @@
                             cartCountElement.classList.remove('animate-bounce');
                         }, 1000);
                     } else {
+                        // If cart count is 0, remove the element
                         cartCountElement.remove();
                     }
+                } else if (cartCount > 0) {
+                    // If element doesn't exist but cart has items (e.g., page change), re-render header part if possible
+                    // For simplicity, a full re-render might be cleaner, but let's stick to partial
+                    // This part is tricky without a virtual DOM, let's rely on full render for this.
                 }
 
                 // Update cart animation
                 if (cartCount > this.prevCartCount) {
                     this.state.cartAnimation = true;
+                    // Re-render header to show animation
+                    const headerElement = document.querySelector('header');
+                    if(headerElement) {
+                        headerElement.outerHTML = Header(cartCount, 'app.toggleCart()', this.state.cartAnimation, this.state.currentPage === 'menu-only', 'app.showHomePage()');
+                    }
                     setTimeout(() => {
                         this.state.cartAnimation = false;
+                        // Re-render header to stop animation
+                        const updatedHeaderElement = document.querySelector('header');
+                         if(updatedHeaderElement) {
+                            updatedHeaderElement.outerHTML = Header(cartCount, 'app.toggleCart()', this.state.cartAnimation, this.state.currentPage === 'menu-only', 'app.showHomePage()');
+                        }
                     }, 500);
                 }
                 
@@ -789,17 +846,31 @@
             }
 
             showMessage(text, isError = false) {
-                this.setState({ message: { text, isError } });
-                setTimeout(() => {
-                    this.setState({ message: null });
-                }, 3000);
+                // Remove existing message box if any
+                const existingMsg = document.getElementById('message-box');
+                if(existingMsg) existingMsg.remove();
+                
+                // Create and append new message box
+                const msgHtml = MessageBox(text, isError);
+                if(msgHtml) {
+                    const msgElement = document.createElement('div');
+                    msgElement.id = 'message-box-container';
+                    msgElement.innerHTML = msgHtml;
+                    document.body.appendChild(msgElement);
+
+                    // Set timeout to remove it
+                    setTimeout(() => {
+                        msgElement.remove();
+                    }, 3000);
+                }
             }
 
-            scrollToMenu() {
-                const menuSection = document.getElementById('menu-section');
-                if (menuSection) {
-                    menuSection.scrollIntoView({ behavior: 'smooth' });
-                }
+            showMenuOnly() {
+                this.setState({ currentPage: 'menu-only' });
+            }
+
+            showHomePage() {
+                this.setState({ currentPage: 'home' });
             }
 
             handleAddToCart(item) {
@@ -810,20 +881,50 @@
                     newCart[item.name] = { price: item.price, qty: 1 };
                 }
                 this.setState({ cart: newCart });
-                this.showMessage(`Added ${item.name} to cart!`);
                 
-                // Trigger animation on the menu item card
+                // Show success message
+                this.showMessage(`✅ ${item.name} added to cart!`);
+                
+                // Trigger animations on the menu item
                 this.animateMenuItem(item.name);
             }
 
             animateMenuItem(itemName) {
                 const itemId = `menu-item-${itemName.replace(/\s+/g, '-')}`;
-                const itemElement = document.getElementById(itemId);
+                const itemNameId = `item-name-${itemName.replace(/\s+/g, '-')}`;
+                const addBtnId = `add-btn-${itemName.replace(/\s+/g, '-')}`;
                 
+                const itemElement = document.getElementById(itemId);
+                const itemNameElement = document.getElementById(itemNameId);
+                const addButton = document.getElementById(addBtnId);
+                
+                // Card animation
                 if (itemElement) {
                     itemElement.classList.add('animate-item-added');
                     setTimeout(() => {
                         itemElement.classList.remove('animate-item-added');
+                    }, 600);
+                }
+                
+                // Item name jump animation
+                if (itemNameElement) {
+                    itemNameElement.classList.add('animate-item-name-jump');
+                    setTimeout(() => {
+                        itemNameElement.classList.remove('animate-item-name-jump');
+                    }, 800);
+                }
+                
+                // Button success animation
+                if (addButton) {
+                    const originalText = addButton.innerHTML;
+                    addButton.innerHTML = '✓';
+                    addButton.classList.add('animate-button-success');
+                    
+                    setTimeout(() => {
+                        addButton.classList.remove('animate-button-success');
+                        setTimeout(() => {
+                            addButton.innerHTML = originalText;
+                        }, 300);
                     }, 600);
                 }
             }
@@ -835,7 +936,8 @@
                 } else {
                     newCart[name].qty = newQty;
                 }
-                this.setState({ cart: newCart });
+                // Re-render the cart
+                this.setState({ cart: newCart, isCartOpen: true });
             }
 
             handleConfirmOrder(details) {
@@ -989,26 +1091,25 @@
                     console.error("PDF Generation Error:", e);
                 }
             }
-
-            render() {
+            
+            // --- NEW: Moved MenuOnlyPage inside the class ---
+            MenuOnlyPage(menuData, onAddToCart) {
                 const cartCount = this.getCartCount();
-
-                if (this.state.isLoading) {
-                    document.getElementById('root').innerHTML = SplashScreen();
-                    return;
-                }
-
-                const mainContent = `
-                    <div class="text-gray-800 flex flex-col min-h-screen">
-                        ${Header(cartCount, 'app.toggleCart()', this.state.cartAnimation)}
+                return `
+                    <div class="menu-only-page">
+                        ${Header(cartCount, 'app.toggleCart()', this.state.cartAnimation, true, 'app.showHomePage()')}
                         
-                        ${HeroSection()}
-                        
-                        ${FeaturesSection()}
-                        
-                        ${Menu(menuData, 'app.handleAddToCart')}
-                        
-                        ${TestimonialsSection()}
+                        <section class="py-8 bg-orange-50">
+                            <div class="container mx-auto px-4">
+                                <div class="text-center mb-8">
+                                    <h2 class="text-3xl md:text-4xl font-bold text-[#6D4C41] mb-3 font-script">Our Complete Menu</h2>
+                                    <p class="text-gray-500">Handcrafted with love and tradition</p>
+                                </div>
+                                ${CategorySection("☕ CHAAYE VARIANTS", menuData.chaaye, onAddToCart)}
+                                ${CategorySection("☕ COFFEE", menuData.coffee, onAddToCart)}
+                                ${CategorySection("🍮 DESSERTS & SNACKS", menuData.desserts, onAddToCart)}
+                            </div>
+                        </section>
 
                         ${CartSheet(
                             this.state.isCartOpen,
@@ -1027,15 +1128,63 @@
 
                         ${this.state.showOrderConfirmed ? OrderConfirmation() : ''}
                         
-                        ${this.state.message ? MessageBox(this.state.message.text, this.state.message.isError) : ''}
+                        <!-- Message box will be handled by showMessage() -->
 
                         ${Footer()}
                     </div>
                 `;
+            }
 
-                document.getElementById('root').innerHTML = mainContent;
+            render() {
+                const cartCount = this.getCartCount();
+                let pageHtml = '';
 
-                // Add event listeners
+                if (this.state.isLoading) {
+                    pageHtml = SplashScreen();
+                } else if (this.state.currentPage === 'menu-only') {
+                    // Call the class method
+                    pageHtml = this.MenuOnlyPage(menuData, 'app.handleAddToCart');
+                } else {
+                    // Home Page
+                    pageHtml = `
+                        <div class="text-gray-800 flex flex-col min-h-screen">
+                            ${Header(cartCount, 'app.toggleCart()', this.state.cartAnimation, false, 'app.showHomePage()')}
+                            
+                            ${HeroSection()}
+                            
+                            ${FeaturesSection()}
+                            
+                            <!-- Menu section removed from home page as requested -->
+                            
+                            ${TestimonialsSection()}
+
+                            ${CartSheet(
+                                this.state.isCartOpen,
+                                this.state.cart,
+                                'app.toggleCart()',
+                                'app.handleUpdateQuantity',
+                                'app.openOrderModal()',
+                                'app.handleDownloadPdf()'
+                            )}
+
+                            ${OrderModal(
+                                this.state.isOrderModalOpen,
+                                'app.closeOrderModal()',
+                                'app.submitOrder()'
+                            )}
+
+                            ${this.state.showOrderConfirmed ? OrderConfirmation() : ''}
+                            
+                            <!-- Message box will be handled by showMessage() -->
+
+                            ${Footer()}
+                        </div>
+                    `;
+                }
+
+                document.getElementById('root').innerHTML = pageHtml;
+
+                // Add event listeners AFTER updating innerHTML
                 this.setupEventListeners();
             }
 
@@ -1061,7 +1210,7 @@
                                 }, 500);
                             });
                         });
-                    }, 100);
+                    }, 100); // Small delay to ensure elements are in the DOM
                 }
             }
 
@@ -1113,3 +1262,5 @@
     </script>
 </body>
 </html>
+
+
